@@ -1,12 +1,17 @@
 import { serve } from "bun";
 import { handleConvertRoute } from './routes/convert';
+import { initDB } from "./db/database";
+
+initDB();
 
 const PORT = process.env.PORT || 3000;
 
 const server = serve({
     port: PORT,
-    async fetch(req) {
+    async fetch(req, server) {
         const url = new URL(req.url);
+        
+        const clientIp = server.requestIP(req)?.address || '127.0.0.1';
 
         const corsHeaders = {
             "Access-Control-Allow-Origin": "*",
@@ -19,7 +24,7 @@ const server = serve({
         }
 
         if (url.pathname === "/api/convert") {
-            const response = await handleConvertRoute(req);
+            const response = await handleConvertRoute(req, clientIp);
 
             for (const [key, value] of Object.entries(corsHeaders)) {
                 response.headers.set(key, value);

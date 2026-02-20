@@ -1,6 +1,7 @@
+import { identifyRequester } from "../middleware/identify";
 import { convertAudio } from "../services/ffmpeg";
 import { createLog } from "../services/logService";
-import { getOrCreateUser, checkUserLimit, recordConversion } from "../services/userService";
+import { checkUserLimit, recordConversion } from "../services/userService";
 import { join } from "path";
 
 const TEMP_DIR = join(import.meta.dir, "../../temp");
@@ -11,9 +12,16 @@ export async function handleConvertRoute(req: Request, ip: string): Promise<Resp
     if (req.method !== "POST")
         return new Response("Method not allowed", { status: 405 })
 
-    const userId = await getOrCreateUser(ip);
+    const contentType = req.headers.get("content-type") || "";
+    if (!contentType.includes("multipart/form-data")) {
+        return new Response("Content-Type must be multipart/form-data", { status: 400 });
+    }
+
+    let userId = "unknown";
 
     try {
+        userId = await identifyRequester(req, ip);
+
         // Check daily_usage of X user
         const { allowed, remaining } = checkUserLimit(userId);
         if (!allowed) {
@@ -24,7 +32,7 @@ export async function handleConvertRoute(req: Request, ip: string): Promise<Resp
         const formData = await req.formData();
         const file = formData.get("file") as File;
         const format = formData.get("format") as string || "mp3";
-        const isPremium = false;
+        const isPremium = remaining >= 999;
 
         // Check if a file was provided
         if (!file) {
@@ -41,9 +49,10 @@ export async function handleConvertRoute(req: Request, ip: string): Promise<Resp
 
             return new Response(JSON.stringify({
                 error: "File too large",
-                message: `The free limit is  50MB. Your file weights ${sizeinMb}MB.`
+                message: `The free limit is 50MB. Your file weights ${sizeinMb}MB.`
             }), { status: 413 });
         }
+
         // Log creation
         createLog(userId, 'CONVERSION_START', `${file.name} -> ${format}`);
 
@@ -85,7 +94,8 @@ export async function handleConvertRoute(req: Request, ip: string): Promise<Resp
             },
         });
     } catch (error: any) {
-        createLog(userId, 'CONVERSION_ERROR', error.message);
+        if (userId !== "unknown")
+            createLog(userId, 'CONVERSION_ERROR', error.message);
         console.error("[Route Error] ", error.message)
         return new Response(JSON.stringify({ error: error.message }), {
             status: 500,

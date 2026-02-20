@@ -36,6 +36,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # App temporary files
 temp/*
 !temp/.gitkeep
+temp/
 
 # IntelliJ based IDEs
 .idea

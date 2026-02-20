@@ -10,6 +10,11 @@ export async function convertAudio(
     if (!allowedFormats.includes(targetFormat))
         throw new Error(`Format not supported ${targetFormat}`);
 
+    if (process.env.NODE_ENV === "test"){
+        await Bun.write(outputPath, "mock-audio-content");
+        return ;
+    }
+
     // Modern way of executing clean terminal commands
     try {
         await $`ffmpeg -y -i ${inputPath} ${outputPath}`.quiet();

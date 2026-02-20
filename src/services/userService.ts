@@ -15,6 +15,25 @@ export async function getOrCreateUser(ip: string): Promise<string> {
     return userId;
 }
 
+
+export function syncUserWithGoogle(googleId: string, email: string) {
+    db.query(`
+        INSERT OR IGNORE INTO users (id, email)
+        VALUES ($id, $email)
+    `).run({
+        $id: googleId,
+        $email: email
+    });
+
+    return db.query("SELECT * FROM users WHERE id = $id").get({ $id: googleId }) as {
+        id: string,
+        email: string,
+        is_premium: number,
+        stripe_customer_id: string | null
+    };
+}
+
+
 export function checkUserLimit(userId: string): { allowed: boolean; remaining: number } {
     // Check if premium
     const user = db.query(`SELECT is_premium FROM users WHERE id = $id`)

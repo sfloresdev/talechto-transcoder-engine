@@ -1,11 +1,13 @@
 import { expect, test, describe, beforeAll } from "bun:test";
 import { handleConvertRoute } from "../src/routes/convert";
-import { initDB } from "../src/db/database";
+import { initDB, db } from "../src/db/database";
 
 describe("Talechto Engine Unit Testing", () => {
 
     beforeAll(() => {
         initDB();
+        db.run("DELETE FROM daily_usage");
+        db.run("DELETE FROM activity_logs");
     });
 
     // TEST 1: Test API rejects request without a file attached
@@ -26,8 +28,7 @@ describe("Talechto Engine Unit Testing", () => {
     // Here we send 6 request with the same IP
     test("Should block user after 5 requests (429)", async () => {
         const testIP = "192.168.1.50";
-
-        const dummyFile = new File(["pitido"], "test.wav", { type: "audio/wav" });
+        const dummyFile = new File(["fake-audio-test"], "test.wav", { type: "audio/wav" });
 
         const sendRequest = async () => {
             const formData = new FormData();

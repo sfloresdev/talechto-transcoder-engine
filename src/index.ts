@@ -4,7 +4,7 @@ import { initDB } from "./db/database";
 
 initDB();
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 
 const server = serve({
     port: PORT,

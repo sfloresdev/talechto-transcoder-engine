@@ -7,7 +7,7 @@ export async function convertAudio(
 ): Promise<void>{
     const allowedFormats = ["mp3", "wav", "flac", "m4a", "ogg"];
 
-    if (!allowedFormats.includes(targetFormat))
+    if (!allowedFormats.includes(targetFormat.toLowerCase()))
         throw new Error(`Format not supported ${targetFormat}`);
 
     if (process.env.NODE_ENV === "test"){

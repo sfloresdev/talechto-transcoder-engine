@@ -69,4 +69,71 @@ describe("Talechto Engine Unit Testing", () => {
         const res = await handleConvertRoute(req, "1.1.1.1");
         expect(res.status).toBe(413) // Paylod too large
     });
+
+    // TEST 4: Attack GET method instead of POST
+    test("Should reject GET requests with Mehtod not Allowed (405)", async () => {
+        const req = new Request("http://localhost/api/convert", {
+            method: 'GET'
+        });
+
+        const res = await handleConvertRoute(req, '127.0.0.1');
+
+        expect(res.status).toBe(405);
+        const text = await res.text();
+        expect(text).toBe("Method not allowed");
+    });
+
+    // TEST 5: Attack GET Headers instead of files
+    test("Should reject if Content-Type is not multipart/form-data (400)", async () => {
+        // Un bot intenta enviar un JSON malicioso en lugar de un formulario con archivo
+        const req = new Request("http://localhost/api/convert", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ file: "soy_un_virus.exe", format: "mp3" })
+        });
+
+        const res = await handleConvertRoute(req, "127.0.0.2");
+
+        expect(res.status).toBe(400);
+        const text = await res.text();
+        expect(text).toBe("Content-Type must be multipart/form-data");
+    });
+
+    // TEST 6: Bad request (Form with NO "file" field)
+    test("Should handle FormData with missing 'file' field gracefully (400)", async () => {
+        const formData = new FormData();
+        formData.append("format", "wav");
+        formData.append("random_field", "hacked");
+        // Se nos "olvida" adjuntar el archivo
+
+        const req = new Request("http://localhost/api/convert", {
+            method: "POST",
+            body: formData
+        });
+
+        const res = await handleConvertRoute(req, "127.0.0.3");
+
+        expect(res.status).toBe(400);
+        const data = await res.json() as { error: string };
+        expect(data.error).toBe("No file was provided");
+    });
+
+
+    // TEST 7: Format injection
+    test("Should fallback to mp3 if format is empty", async () => {
+        const dummyFile = new File(["audio"], "test.wav", { type: "audio/wav" });
+        const formData = new FormData();
+        formData.append("file", dummyFile);
+        formData.append("format", ""); // Empty format on porpuse 
+
+        const req = new Request("http://localhost/api/convert", {
+            method: "POST",
+            body: formData
+        });
+
+        const res = await handleConvertRoute(req, "127.0.0.4");
+
+        expect(res.status).toBe(200);
+        expect(res.headers.get("Content-Type")).toBe("audio/mp3");
+    });
 });

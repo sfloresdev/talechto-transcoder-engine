@@ -21,18 +21,20 @@ export async function handleAuthCallback(req: Request): Promise<Response> {
         const token = await createToken({ id: user.id, email: user.email });
 
         const responseBody = JSON.stringify({
-            succes: true,
+            success: true,
             user: {
                 email: user.email,
                 isPremium: !!user.is_premium
             }
         });
 
+        const MAX_AGE = 15 * 24 * 60 * 60;
+
         return new Response(responseBody, {
             status: 200,
             headers: {
                 "Content-Type": "application/json",
-                "Set-Cookie": `auth_token=${token}; HttpOnly; Path=/: Max-age=${15 * 24 * 60 * 60}; SameSite=Lax`
+                "Set-Cookie": `auth_token=${token}; HttpOnly; Path=/; Max-age=${MAX_AGE}; SameSite=Lax`
             }
         });
     } catch (error: any) {

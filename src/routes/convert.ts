@@ -90,7 +90,7 @@ export async function handleConvertRoute(req: Request, ip: string): Promise<Resp
             headers: {
                 "Content-Type": `audio/${format}`,
                 "Content-Disposition": `attachment; filename="${outputFilename}"`,
-                "X-Remaining-Credits": remaining.toString()
+                "X-Remaining-Credits": isPremium ? "Unlimited" : (remaining - 1).toString()
             },
         });
     } catch (error: any) {
